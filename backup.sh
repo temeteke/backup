@@ -1,6 +1,6 @@
 #!/bin/sh
 
-option='-av --delete'
+option='-a --delete'
 
 # lock
 PIDFILE="/tmp/`basename $0`.pid"
@@ -21,14 +21,17 @@ function usage {
 	EOT
 }
 
-while getopts "hn" opt; do
+while getopts "hnv" opt; do
 	case $opt in
 		h) usage && exit 0;;
 		n) dryrun=1; option="$option -n";;
+		v) verbose=1;;
 	esac
 done
 
 shift $(expr $OPTIND - 1)
+
+[ ! -z $verbose ] && option="$option -v"
 
 [ $# -ne 2 ] && usage && exit 1
 
@@ -45,13 +48,15 @@ else
 	last=$src
 fi
 new=$dest/$name/$(date +%Y%m%d%H%M)
-[ -z dryrun ] && mkdir -p $new
+[ -z $dryrun ] && mkdir -p $new
 
 command="rsync $option --link-dest=$last $src/ $new/"
-[ ! -z dryrun ] && echo $command 
+[ ! -z $verbose ] && echo $command 
 eval $command
 
-oldDate=$(date --date 'month ago' +'%Y%m%d%H%M')
-oldDirs=$(ls $dest/$name | awk '$1<'$oldDate' {print}')
-command="cd $dest/$name; rm -rf $oldDirs"
-[ ! -z dryrun ] && echo $command || eval $command
+oldDirs=$(ls $dest/$name | awk '$1<'$(date --date 'month ago' +'%Y%m%d%H%M')' {print}')
+[ -z $verbose ] \
+	&& command="(cd $dest/$name; rm -rf $oldDirs)" \
+	|| command="(cd $dest/$name; rm -rfv $oldDirs)"
+[ ! -z $verbose ] && echo $command 
+[ -z $dryrun ] && eval $command
