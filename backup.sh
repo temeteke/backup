@@ -50,3 +50,8 @@ new=$dest/$name/$(date +%Y%m%d%H%M)
 command="rsync $option --link-dest=$last $src/ $new/"
 [ ! -z dryrun ] && echo $command 
 eval $command
+
+oldDate=$(date --date 'month ago' +'%Y%m%d%H%M')
+oldDirs=$(ls $dest/$name | awk '$1<'$oldDate' {print}')
+command="cd $dest/$name; rm -rf $oldDirs"
+[ ! -z dryrun ] && echo $command || eval $command
