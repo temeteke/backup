@@ -6,7 +6,7 @@ option='-a --delete'
 PIDFILE="/tmp/`basename $0`.pid"
 if [ -e $PIDFILE ] && kill -0 `cat $PIDFILE`; then
 	echo 'already running' 1>&2
-	exit
+	exit 1
 fi
 
 trap "rm -f $PIDFILE; exit" INT TERM EXIT
