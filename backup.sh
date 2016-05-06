@@ -43,7 +43,7 @@ name=$(echo $src | sed 's|/|_|g')
 
 if [ -d $dest/$name ]; then
 	ls $dest/$name | grep -v '[0-9]\{8\}' > /dev/null && echo "The structure of $dest/$name is not suitable." && exit 1
-	last=$dest/$name/$(ls -t $dest/$name | head -n1)
+	last=$dest/$name/$(ls | tail -n1)
 else
 	last=$src
 fi
