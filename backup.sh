@@ -1,6 +1,6 @@
 #!/bin/sh
 
-option='-a --delete'
+rsync_option='-a --delete'
 
 # lock
 PIDFILE="/tmp/`basename $0`.pid"
@@ -12,31 +12,41 @@ fi
 trap "rm -f $PIDFILE; exit" INT TERM EXIT
 echo $$ > $PIDFILE
 
-function usage {
+myeval() {
+	[ -n "$verbose" ] && echo "$*"
+	[ -z "$dryrun" ] && eval "$*"
+}
+
+usage() {
 	cat <<-EOT
-		Usage: $(basename $0) SRC DEST
+		Usage: $(basename $0) [OPTION] SRC DEST
 		Backup SRC to DEST using rsync.
 		
+		  -e	exclude
+		  -h	help
+		  -i	include
 		  -n	dryrun
+		  -v	verbose
 	EOT
 }
 
-while getopts "hnv" opt; do
+while getopts "e:hi:nv" opt; do
 	case $opt in
+		e) rsync_option="$rsync_option --exclude='$OPTARG'";;
 		h) usage && exit 0;;
-		n) dryrun=1; option="$option -n";;
+		i) rsync_option="$rsync_option --include='$OPTARG'";;
+		n) dryrun=1;;
 		v) verbose=1;;
 	esac
 done
 
 shift $(expr $OPTIND - 1)
 
-[ ! -z $verbose ] && option="$option -v"
-
 [ $# -ne 2 ] && usage && exit 1
 
 [ ! -d $1 ] && usage && exit 1
 [ ! -d $2 ] && usage && exit 1
+
 src=$(cd $1 && pwd)
 dest=$(cd $2 && pwd)
 name=$(echo $src | sed 's|/|_|g')
@@ -48,15 +58,21 @@ else
 	last=$src
 fi
 new=$dest/$name/$(date +%Y%m%d%H%M)
-[ -z $dryrun ] && mkdir -p $new
+myeval "mkdir -p $new"
 
-command="rsync $option --link-dest=$last $src/ $new/"
-[ ! -z $verbose ] && echo $command 
-eval $command
+if [ -n "$dryrun" ]; then
+	rsync_option="$rsync_option -n"
+fi
+if [ -n "$verbose" ]; then
+	rsync_option="$rsync_option -v"
+fi
+(unset dryrun; myeval "rsync $rsync_option --link-dest=$last $src/ $new/")
 
-oldDirs=$(ls $dest/$name | awk '$1<'$(date --date 'month ago' +'%Y%m%d%H%M')' {print}')
-[ -z $verbose ] \
-	&& command="(cd $dest/$name; rm -rf $oldDirs)" \
-	|| command="(cd $dest/$name; rm -rfv $oldDirs)"
-[ ! -z $verbose ] && echo $command 
-[ -z $dryrun ] && eval $command
+old_dirs=$(ls $dest/$name | awk '$1<'$(date --date 'month ago' +'%Y%m%d%H%M')' {print}')
+if [ -n "$old_dirs" ]; then
+	if [ -z "$verbose" ]; then
+		myeval "(cd $dest/$name; rm -rf $old_dirs)"
+	else
+		myeval "(cd $dest/$name; rm -rfv $old_dirs)"
+	fi
+fi
