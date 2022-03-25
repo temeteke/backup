@@ -68,7 +68,7 @@ if [ -n "$verbose" ]; then
 fi
 (unset dryrun; myeval "rsync $rsync_option --link-dest=$last $src/ $new/")
 
-old_dirs=$(ls $dest/$name | awk '$1<'$(date --date 'month ago' +'%Y%m%d%H%M')' {print}')
+old_dirs=$(ls $dest/$name | awk -v 'ORS= ' '$1<'$(date --date 'month ago' +'%Y%m%d%H%M')' {print}')
 if [ -n "$old_dirs" ]; then
 	if [ -z "$verbose" ]; then
 		myeval "(cd $dest/$name; rm -rf $old_dirs)"
