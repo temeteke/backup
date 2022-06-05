@@ -1,6 +1,6 @@
 #!/bin/sh
 
-rsync_option='-a --delete'
+rsync_option='-a --delete -x'
 
 # lock
 PIDFILE="/tmp/`basename $0`.pid"
