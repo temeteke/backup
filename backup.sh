@@ -13,7 +13,6 @@ trap "rm -f $PIDFILE; exit" INT TERM EXIT
 echo $$ > $PIDFILE
 
 myeval() {
-	[ -n "$verbose" ] && echo "$*"
 	[ -z "$dryrun" ] && eval "$*"
 }
 
