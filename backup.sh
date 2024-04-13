@@ -2,16 +2,6 @@
 
 rsync_option='-a --delete -x'
 
-# lock
-PIDFILE="/tmp/`basename $0`.pid"
-if [ -e $PIDFILE ] && kill -0 `cat $PIDFILE`; then
-	echo 'already running' 1>&2
-	exit 1
-fi
-
-trap "rm -f $PIDFILE; exit" INT TERM EXIT
-echo $$ > $PIDFILE
-
 myeval() {
 	[ -z "$dryrun" ] && eval "$*"
 }
@@ -49,6 +39,16 @@ shift $(expr $OPTIND - 1)
 src=$(cd $1 && pwd)
 dest=$(cd $2 && pwd)
 name=$(echo $src | sed 's|/|_|g')
+
+# lock
+PIDFILE="/tmp/backup$name.pid"
+if [ -e $PIDFILE ] && kill -0 `cat $PIDFILE`; then
+	echo 'already running' 1>&2
+	exit 1
+fi
+
+trap "rm -f $PIDFILE; exit" INT TERM EXIT
+echo $$ > $PIDFILE
 
 if [ -d $dest/$name ]; then
 	ls $dest/$name | grep -v '[0-9]\{8\}' > /dev/null && echo "The structure of $dest/$name is not suitable." && exit 1
